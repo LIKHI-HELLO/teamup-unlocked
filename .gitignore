@@ -34,3 +34,10 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Vercel generated output
+.vercel/
+
+# Empty files accidentally created during build
+/build
+/vite
