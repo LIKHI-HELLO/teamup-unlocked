@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 
 import { Logo } from "./Logo";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
   { label: "Home", to: "/" },
@@ -39,6 +45,39 @@ function ThemeToggle() {
 }
 
 export function Header() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+      setAuthLoading(false);
+    });
+
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error("Session check failed:", error.message);
+      }
+
+      setIsAuthenticated(!!session);
+      setAuthLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      console.error("Logout failed:", error.message);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full">
       <div className="glass border-x-0 border-t-0">
@@ -61,21 +100,61 @@ export function Header() {
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-              <Link to="/login">Login</Link>
-            </Button>
-            <Button asChild size="sm" className="hidden rounded-full sm:inline-flex">
-              <Link to="/signup">Sign Up</Link>
-            </Button>
+
+            {!authLoading && (
+              <>
+                {isAuthenticated ? (
+                  <>
+                    <Button asChild variant="ghost" size="sm">
+                      <Link to="/dashboard">Dashboard</Link>
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      className="rounded-full"
+                      onClick={handleLogout}
+                    >
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="sm"
+                      className="hidden sm:inline-flex"
+                    >
+                      <Link to="/login">Login</Link>
+                    </Button>
+
+                    <Button
+                      asChild
+                      size="sm"
+                      className="hidden rounded-full sm:inline-flex"
+                    >
+                      <Link to="/signup">Sign Up</Link>
+                    </Button>
+                  </>
+                )}
+              </>
+            )}
 
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden"
+                  aria-label="Open menu"
+                >
                   <Menu className="size-5" />
                 </Button>
               </SheetTrigger>
+
               <SheetContent side="right" className="w-72">
                 <SheetTitle className="px-4 pt-4">Menu</SheetTitle>
+
                 <nav className="mt-4 flex flex-col gap-1 px-2">
                   {navItems.map((item) => (
                     <Link
@@ -88,20 +167,32 @@ export function Header() {
                       {item.label}
                     </Link>
                   ))}
-                  <Link
-                    to="/dashboard"
-                    className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
-                  >
-                    Dashboard
-                  </Link>
-                  <div className="mt-4 flex flex-col gap-2 px-1">
-                    <Button asChild variant="outline">
-                      <Link to="/login">Login</Link>
-                    </Button>
-                    <Button asChild>
-                      <Link to="/signup">Sign Up</Link>
-                    </Button>
-                  </div>
+
+                  {!authLoading && (
+                    <div className="mt-4 flex flex-col gap-2 px-1">
+                      {isAuthenticated ? (
+                        <>
+                          <Button asChild variant="outline">
+                            <Link to="/dashboard">Dashboard</Link>
+                          </Button>
+
+                          <Button onClick={handleLogout}>
+                            Logout
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button asChild variant="outline">
+                            <Link to="/login">Login</Link>
+                          </Button>
+
+                          <Button asChild>
+                            <Link to="/signup">Sign Up</Link>
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </nav>
               </SheetContent>
             </Sheet>
