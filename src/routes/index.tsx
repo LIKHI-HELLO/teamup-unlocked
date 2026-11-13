@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   Award,
   CalendarDays,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 
 import heroImage from "@/assets/hero-students.jpg";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +33,10 @@ export const Route = createFileRoute("/")({
         content:
           "UNSTUCK is India's student collaboration platform for hackathons, projects, innovation and community learning.",
       },
-      { property: "og:title", content: "UNSTUCK — Find Teammates, Explore Events, Build Together" },
+      {
+        property: "og:title",
+        content: "UNSTUCK — Find Teammates, Explore Events, Build Together",
+      },
       {
         property: "og:description",
         content:
@@ -104,26 +109,105 @@ const testimonials = [
 ];
 
 function Landing() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
+
+  // Check whether the visitor is logged in
+  useEffect(() => {
+    let active = true;
+
+    const checkSession = async () => {
+      const { data, error } = await supabase.auth.getSession();
+
+      if (active) {
+        if (error) {
+          console.error("Session check error:", error);
+        }
+
+        setIsLoggedIn(!!data.session);
+        setSessionChecked(true);
+      }
+    };
+
+    checkSession();
+
+    // Update homepage whenever login or logout happens
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) {
+        setIsLoggedIn(!!session);
+        setSessionChecked(true);
+      }
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
   return (
     <>
       <section className="surface-glow relative overflow-hidden">
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 lg:grid-cols-2 lg:py-24">
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
             <Badge variant="secondary" className="rounded-full px-3 py-1">
-              <Sparkles className="mr-1 size-3.5" /> Built for Indian student builders
+              <Sparkles className="mr-1 size-3.5" />
+              Built for Indian student builders
             </Badge>
+
             <h1 className="mt-5 text-4xl font-bold leading-[1.08] sm:text-5xl lg:text-6xl">
-              Find Teammates. <span className="text-gradient">Explore Events.</span> Build Together.
+              Find Teammates.{" "}
+              <span className="text-gradient">Explore Events.</span> Build
+              Together.
             </h1>
+
             <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-              India&apos;s student collaboration platform for hackathons, projects, innovation and
-              community learning.
+              India's student collaboration platform for hackathons, projects,
+              innovation and community learning.
             </p>
+
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg" className="rounded-full shadow-glow">
-                <Link to="/signup">Sign Up For Free</Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="rounded-full">
+              {sessionChecked && (
+                <>
+                  {isLoggedIn ? (
+                    <Button
+                      asChild
+                      size="lg"
+                      className="rounded-full shadow-glow"
+                    >
+                      <Link to="/dashboard">Go to Dashboard</Link>
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        asChild
+                        size="lg"
+                        className="rounded-full shadow-glow"
+                      >
+                        <Link to="/login">Sign In</Link>
+                      </Button>
+
+                      <Button
+                        asChild
+                        size="lg"
+                        variant="outline"
+                        className="rounded-full"
+                      >
+                        <Link to="/signup">Sign Up For Free</Link>
+                      </Button>
+                    </>
+                  )}
+                </>
+              )}
+
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="rounded-full"
+              >
                 <Link to="/events">Explore Events</Link>
               </Button>
             </div>
@@ -131,6 +215,7 @@ function Landing() {
 
           <div className="relative">
             <div className="gradient-brand absolute -inset-4 rounded-[2rem] opacity-20 blur-2xl" />
+
             <img
               src={heroImage}
               alt="Students collaborating on laptops at a hackathon"
@@ -146,28 +231,43 @@ function Landing() {
         <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-4 py-10 md:grid-cols-4">
           {stats.map((s) => (
             <div key={s.label} className="text-center">
-              <div className="text-3xl font-bold text-gradient sm:text-4xl">{s.value}</div>
-              <div className="mt-1 text-sm text-muted-foreground">{s.label}</div>
+              <div className="text-3xl font-bold text-gradient sm:text-4xl">
+                {s.value}
+              </div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                {s.label}
+              </div>
             </div>
           ))}
         </div>
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-20">
-        <h2 className="text-3xl font-bold sm:text-4xl">Everything a student builder needs</h2>
+        <h2 className="text-3xl font-bold sm:text-4xl">
+          Everything a student builder needs
+        </h2>
+
         <p className="mt-3 max-w-2xl text-muted-foreground">
-          From the first idea to the final demo — teammates, events, answers and a portfolio that
-          proves what you shipped.
+          From the first idea to the final demo — teammates, events, answers
+          and a portfolio that proves what you shipped.
         </p>
+
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((f) => (
-            <Card key={f.title} className="card-hover rounded-2xl border-border/70">
+            <Card
+              key={f.title}
+              className="card-hover rounded-2xl border-border/70"
+            >
               <CardContent className="p-6">
                 <span className="gradient-brand mb-4 flex size-11 items-center justify-center rounded-xl shadow-glow">
                   <f.icon className="size-5 text-primary-foreground" />
                 </span>
+
                 <h3 className="text-lg font-semibold">{f.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{f.body}</p>
+
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {f.body}
+                </p>
               </CardContent>
             </Card>
           ))}
@@ -176,7 +276,10 @@ function Landing() {
 
       <section className="border-y bg-card/60">
         <div className="mx-auto max-w-6xl px-4 py-20">
-          <h2 className="text-3xl font-bold sm:text-4xl">Students who got unstuck</h2>
+          <h2 className="text-3xl font-bold sm:text-4xl">
+            Students who got unstuck
+          </h2>
+
           <div className="mt-10 grid gap-5 md:grid-cols-3">
             {testimonials.map((t) => (
               <Card key={t.name} className="card-hover rounded-2xl">
@@ -186,10 +289,16 @@ function Landing() {
                       <Star key={i} className="size-4 fill-current" />
                     ))}
                   </div>
-                  <p className="mt-4 text-sm leading-relaxed">“{t.quote}”</p>
+
+                  <p className="mt-4 text-sm leading-relaxed">
+                    “{t.quote}”
+                  </p>
+
                   <div className="mt-5">
                     <div className="text-sm font-semibold">{t.name}</div>
-                    <div className="text-xs text-muted-foreground">{t.role}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {t.role}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -199,23 +308,48 @@ function Landing() {
       </section>
 
       <section className="mx-auto max-w-3xl px-4 py-20">
-        <h2 className="text-3xl font-bold sm:text-4xl">Frequently asked questions</h2>
+        <h2 className="text-3xl font-bold sm:text-4xl">
+          Frequently asked questions
+        </h2>
+
         <Accordion type="single" collapsible className="mt-8">
           {faqs.slice(0, 5).map((item) => (
             <AccordionItem key={item.q} value={item.q}>
-              <AccordionTrigger className="text-left">{item.q}</AccordionTrigger>
-              <AccordionContent className="text-muted-foreground">{item.a}</AccordionContent>
+              <AccordionTrigger className="text-left">
+                {item.q}
+              </AccordionTrigger>
+
+              <AccordionContent className="text-muted-foreground">
+                {item.a}
+              </AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
+
         <div className="mt-10 rounded-3xl gradient-brand p-8 text-center shadow-glow">
-          <h3 className="text-2xl font-bold text-primary-foreground">Ready to build together?</h3>
+          <h3 className="text-2xl font-bold text-primary-foreground">
+            Ready to build together?
+          </h3>
+
           <p className="mx-auto mt-2 max-w-md text-sm text-primary-foreground/85">
-            Create your student profile in under a minute and find your next team today.
+            Create your student profile in under a minute and find your next
+            team today.
           </p>
-          <Button asChild size="lg" variant="secondary" className="mt-6 rounded-full">
-            <Link to="/signup">Sign Up For Free</Link>
-          </Button>
+
+          {sessionChecked && (
+            <Button
+              asChild
+              size="lg"
+              variant="secondary"
+              className="mt-6 rounded-full"
+            >
+              {isLoggedIn ? (
+                <Link to="/dashboard">Go to Dashboard</Link>
+              ) : (
+                <Link to="/signup">Sign Up For Free</Link>
+              )}
+            </Button>
+          )}
         </div>
       </section>
     </>
