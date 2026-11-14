@@ -17,7 +17,6 @@ function serverSupabaseUrl(publicUrl: string, supabaseKey: string): string | und
 
 function createSupabaseFetch(supabaseUrl: string, supabaseKey: string): typeof fetch {
   const publicUrl = supabaseUrl.replace(/\/+$/, '');
-  const serverUrl = serverSupabaseUrl(publicUrl, supabaseKey);
   return (input, init) => {
     const headers = new Headers(
       typeof Request !== 'undefined' && input instanceof Request ? input.headers : undefined,
