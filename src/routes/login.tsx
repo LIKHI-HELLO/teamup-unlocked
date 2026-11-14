@@ -33,6 +33,28 @@ function LoginPage() {
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
 
+  async function handleGoogleLogin() {
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Google login failed. Please try again."
+      );
+      setLoading(false);
+    }
+  }
+
   async function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -50,9 +72,7 @@ function LoginPage() {
           password,
         });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       if (!data.user) {
         throw new Error("Unable to verify your account.");
@@ -62,12 +82,11 @@ function LoginPage() {
 
       await navigate({ to: "/dashboard" });
     } catch (error) {
-      const message =
+      toast.error(
         error instanceof Error
           ? error.message
-          : "Login failed. Please try again.";
-
-      toast.error(message);
+          : "Login failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -116,12 +135,11 @@ function LoginPage() {
           <Button
             variant="outline"
             type="button"
+            disabled={loading}
             className="mt-6 w-full rounded-full"
-            onClick={() =>
-              toast("Google login will be enabled after Google authentication setup.")
-            }
+            onClick={handleGoogleLogin}
           >
-            Login With Google
+            {loading ? "Connecting..." : "Login With Google"}
           </Button>
 
           <div className="my-6 flex items-center gap-3">

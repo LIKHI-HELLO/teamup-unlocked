@@ -39,9 +39,35 @@ function SignUpPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const strong = rules.every((r) => r.test(password));
   const matches = confirm.length > 0 && confirm === password;
+
+  async function handleGoogleSignIn() {
+    setGoogleLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to sign in with Google.";
+
+      toast.error(message);
+      setGoogleLoading(false);
+    }
+  }
 
   async function handleSignup(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -83,7 +109,10 @@ function SignUpPage() {
       }
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Unable to create your account.";
+        error instanceof Error
+          ? error.message
+          : "Unable to create your account.";
+
       toast.error(message);
     } finally {
       setLoading(false);
@@ -95,6 +124,7 @@ function SignUpPage() {
       <Card className="glass w-full max-w-md rounded-3xl shadow-soft">
         <CardContent className="p-8">
           <h1 className="text-2xl font-bold">Create your account</h1>
+
           <p className="mt-2 text-sm text-muted-foreground">
             Join 10,000+ students building together.
           </p>
@@ -103,11 +133,10 @@ function SignUpPage() {
             variant="outline"
             className="mt-6 w-full rounded-full"
             type="button"
-            onClick={() =>
-              toast("Google sign-up will be enabled after Google authentication setup.")
-            }
+            onClick={handleGoogleSignIn}
+            disabled={googleLoading || loading}
           >
-            Sign Up With Google
+            {googleLoading ? "Connecting to Google..." : "Sign Up With Google"}
           </Button>
 
           <div className="my-6 flex items-center gap-3">
@@ -165,11 +194,16 @@ function SignUpPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
               />
+
               <ul className="mt-2 grid grid-cols-2 gap-1 text-xs">
                 {rules.map((r) => (
                   <li
                     key={r.label}
-                    className={r.test(password) ? "text-success" : "text-muted-foreground"}
+                    className={
+                      r.test(password)
+                        ? "text-success"
+                        : "text-muted-foreground"
+                    }
                   >
                     {r.test(password) ? "✓" : "•"} {r.label}
                   </li>
@@ -187,6 +221,7 @@ function SignUpPage() {
                 onChange={(e) => setConfirm(e.target.value)}
                 autoComplete="new-password"
               />
+
               {confirm && !matches && (
                 <p className="text-xs text-destructive">
                   Passwords do not match.
@@ -196,7 +231,7 @@ function SignUpPage() {
 
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || googleLoading}
               className="w-full rounded-full shadow-glow"
             >
               {loading ? "Creating account..." : "Sign Up With Email"}
@@ -205,7 +240,10 @@ function SignUpPage() {
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link to="/login" className="font-medium text-primary hover:underline">
+            <Link
+              to="/login"
+              className="font-medium text-primary hover:underline"
+            >
               Login
             </Link>
           </p>
